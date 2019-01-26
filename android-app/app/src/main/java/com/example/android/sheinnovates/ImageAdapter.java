@@ -1,10 +1,13 @@
 package com.example.android.sheinnovates;
 
 import android.content.Context;
+import android.net.Uri;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+
+import java.net.URI;
 
 public class ImageAdapter extends BaseAdapter {
     private Context mContext;
@@ -14,7 +17,7 @@ public class ImageAdapter extends BaseAdapter {
     }
 
     public int getCount() {
-        return mThumbIds.length;
+        return LaunchActivity.mThumbUris.size();
     }
 
     public Object getItem(int position) {
@@ -37,24 +40,10 @@ public class ImageAdapter extends BaseAdapter {
         } else {
             imageView = (ImageView) convertView;
         }
-
-        imageView.setImageResource(mThumbIds[position]);
+        imageView.setImageURI((LaunchActivity.mThumbUris).get(position));
+        //imageView.setImageResource(LaunchActivity.mThumbIds[position]);
         return imageView;
     }
 
-    // references to our images
-    private Integer[] mThumbIds = {
-            R.drawable.test, R.drawable.test1,
-            R.drawable.test2, R.drawable.test3,
-            R.drawable.test4, R.drawable.test5,
-            R.drawable.test, R.drawable.test1,
-            R.drawable.test2, R.drawable.test3,
-            R.drawable.test4, R.drawable.test5,
-            R.drawable.test, R.drawable.test1,
-            R.drawable.test2, R.drawable.test3,
-            R.drawable.test4, R.drawable.test5,
-            R.drawable.test, R.drawable.test1,
-            R.drawable.test2, R.drawable.test3,
-            R.drawable.test4, R.drawable.test5
-    };
+
 }
