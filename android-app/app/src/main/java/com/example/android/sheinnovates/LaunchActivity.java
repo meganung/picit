@@ -4,6 +4,7 @@ import android.content.ClipData;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
@@ -23,6 +24,11 @@ import com.google.firebase.ml.vision.cloud.FirebaseVisionCloudDetectorOptions;
 import com.google.firebase.ml.vision.cloud.label.FirebaseVisionCloudLabel;
 import com.google.firebase.ml.vision.cloud.label.FirebaseVisionCloudLabelDetector;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.common.FirebaseVisionPoint;
+import com.google.firebase.ml.vision.face.FirebaseVisionFace;
+import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
+import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
+import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,6 +45,7 @@ public class LaunchActivity extends AppCompatActivity {
 
     //main data
     public static ArrayList<JSONObject> imagesdata = new ArrayList<JSONObject>();
+    public static JSONObject imagesjsonobj = new JSONObject();
     // references to our images
     public static Integer[] mThumbIds = {
             R.drawable.test, R.drawable.test1,
@@ -110,12 +117,17 @@ public class LaunchActivity extends AppCompatActivity {
                 cursor.close();
 
                 mThumbUris.add(imageUri);
+                try{
+                    imagesjsonobj.put(imageUri.toString(), new JSONObject());
+                }catch (JSONException e){
+                    //failed
+                }
                 Log.e("MYLIFESWORK",imageUri.toString());
                 //get bitmap for processing
                 try{
                     Bitmap imageBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-                    Log.e("MYLIFESWORK",imageBitmap.toString());
                     getLabels(imageBitmap, imageUri.toString());
+                    getFaceDetection(imageBitmap, imageUri.toString());
                 } catch (IOException e) {
                     Log.e(TAG, "Error getting bitmap image");
                 }
@@ -130,8 +142,8 @@ public class LaunchActivity extends AppCompatActivity {
                         mThumbUris.add(uri);
                         try{
                             Bitmap imageBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
-                            Log.e("MYLIFESWORK",imageBitmap.toString());
                             getLabels(imageBitmap,uri.toString());
+                            getFaceDetection(imageBitmap, uri.toString());
                         } catch (IOException e) {
                             Log.e(TAG, "Error getting bitmap image");
                         }
@@ -159,7 +171,7 @@ public class LaunchActivity extends AppCompatActivity {
         LaunchActivity.this.startActivity(myIntent);
     }
 
-    private void getLabels(Bitmap bitmap, String uristring) {
+    private void getLabels(Bitmap bitmap, final String uristring) {
         FirebaseApp.initializeApp(this);
         final JSONObject imgjsonobj = new JSONObject();
         try {
@@ -197,12 +209,68 @@ public class LaunchActivity extends AppCompatActivity {
                                             Log.e("MYLIFESWORK", text+entityid+confidence);
                                         }
                                         try {
+                                            (imagesjsonobj.getJSONObject(uristring)).put("labels",labeljsonobj);
+                                            Log.e("RIP",imagesjsonobj.toString());
                                             imgjsonobj.put("labels", labeljsonobj);
                                             imagesdata.add(imgjsonobj);
                                             Log.e("okokok",imgjsonobj.toString());
                                         } catch (JSONException e) {
                                             //failed
+                                            Log.e("bigsad","rip me");
                                         }
+                                    }
+                                })
+                        .addOnFailureListener(
+                                new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        // Task failed with an exception
+                                        // ...
+                                    }
+                                });
+
+    }
+
+    private void getFaceDetection(Bitmap bitmap, final String uristring) {
+        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
+        FirebaseVisionFaceDetectorOptions options =
+                new FirebaseVisionFaceDetectorOptions.Builder()
+                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
+                        .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
+                        .build();
+
+        FirebaseVisionFaceDetector detector = FirebaseVision.getInstance().getVisionFaceDetector(options);
+        Task<List<FirebaseVisionFace>> result =
+                detector.detectInImage(image)
+                        .addOnSuccessListener(
+                                new OnSuccessListener<List<FirebaseVisionFace>>() {
+                                    @Override
+                                    public void onSuccess(List<FirebaseVisionFace> faces) {
+                                        // Task completed successfully
+                                        float smileProb = 0;
+                                        float eyeOpenProb = 0;
+                                        for (FirebaseVisionFace face : faces) {
+                                            // If classification was enabled:
+                                            if (face.getSmilingProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
+                                                smileProb = smileProb + face.getSmilingProbability();
+                                            }
+                                            if (face.getRightEyeOpenProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
+                                                eyeOpenProb = eyeOpenProb + face.getRightEyeOpenProbability();
+                                            }
+                                            if (face.getLeftEyeOpenProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
+                                                eyeOpenProb = eyeOpenProb + face.getLeftEyeOpenProbability();
+                                            }
+
+                                        }
+                                        float qualityscore = 0;
+                                        Log.e("faces size: ",Integer.toString(faces.size()));
+                                        if (faces.size() != 0) {
+                                            smileProb = smileProb / faces.size();
+                                            eyeOpenProb = eyeOpenProb / (2 * faces.size());
+                                            qualityscore = 2*smileProb + eyeOpenProb;
+                                        }
+                                        Log.e("SCORE",Float.toString(qualityscore));
+
                                     }
                                 })
                         .addOnFailureListener(
