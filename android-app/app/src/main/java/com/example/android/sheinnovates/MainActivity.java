@@ -33,6 +33,10 @@ public class MainActivity extends AppCompatActivity {
                                     int position, long id) {
                 Toast.makeText(MainActivity.this, "" + position,
                         Toast.LENGTH_SHORT).show();
+
+                Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+                intent.putExtra("position", position);
+                startActivity(intent);
             }
         });
 
