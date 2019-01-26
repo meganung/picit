@@ -7,6 +7,8 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 
+import org.json.JSONException;
+
 import java.net.URI;
 
 public class ImageAdapter extends BaseAdapter {
@@ -17,7 +19,7 @@ public class ImageAdapter extends BaseAdapter {
     }
 
     public int getCount() {
-        return LaunchActivity.mThumbUris.size();
+        return LaunchActivity.imagesdata.size();
     }
 
     public Object getItem(int position) {
@@ -40,7 +42,15 @@ public class ImageAdapter extends BaseAdapter {
         } else {
             imageView = (ImageView) convertView;
         }
-        imageView.setImageURI((LaunchActivity.mThumbUris).get(position));
+        Uri imguri = null;
+        try {
+            imguri = Uri.parse((LaunchActivity.imagesdata.get(position)).getString("uri"));
+        } catch(JSONException e) {
+            //failed
+        }
+        if (imguri != null) {
+            imageView.setImageURI(imguri);
+        }
         //imageView.setImageResource(LaunchActivity.mThumbIds[position]);
         return imageView;
     }

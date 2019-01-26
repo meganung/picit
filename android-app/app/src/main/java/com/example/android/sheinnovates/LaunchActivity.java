@@ -6,12 +6,26 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.cloud.FirebaseVisionCloudDetectorOptions;
+import com.google.firebase.ml.vision.cloud.label.FirebaseVisionCloudLabel;
+import com.google.firebase.ml.vision.cloud.label.FirebaseVisionCloudLabelDetector;
+import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -23,6 +37,8 @@ public class LaunchActivity extends AppCompatActivity {
     private Uri imageUri;
     private static final String TAG = "LaunchActivity";
 
+    //main data
+    public static ArrayList<JSONObject> imagesdata = new ArrayList<JSONObject>();
     // references to our images
     public static Integer[] mThumbIds = {
             R.drawable.test, R.drawable.test1,
@@ -42,6 +58,7 @@ public class LaunchActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        FirebaseApp.initializeApp(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_launch);
 
@@ -92,8 +109,16 @@ public class LaunchActivity extends AppCompatActivity {
                 String imageEncoded = cursor.getString(columnIndex);
                 cursor.close();
 
-
                 mThumbUris.add(imageUri);
+                Log.e("MYLIFESWORK",imageUri.toString());
+                //get bitmap for processing
+                try{
+                    Bitmap imageBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+                    Log.e("MYLIFESWORK",imageBitmap.toString());
+                    getLabels(imageBitmap, imageUri.toString());
+                } catch (IOException e) {
+                    Log.e(TAG, "Error getting bitmap image");
+                }
                 //tryReloadAndDetectInImage();
             } else {
                 if (data.getClipData() != null) {
@@ -103,6 +128,13 @@ public class LaunchActivity extends AppCompatActivity {
                         ClipData.Item item = mClipData.getItemAt(i);
                         Uri uri = item.getUri();
                         mThumbUris.add(uri);
+                        try{
+                            Bitmap imageBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                            Log.e("MYLIFESWORK",imageBitmap.toString());
+                            getLabels(imageBitmap,uri.toString());
+                        } catch (IOException e) {
+                            Log.e(TAG, "Error getting bitmap image");
+                        }
                         // Get the cursor
                         Cursor cursor = getContentResolver().query(uri, filePathColumn, null, null, null);
                         // Move to first row
@@ -120,12 +152,68 @@ public class LaunchActivity extends AppCompatActivity {
         }
     }
 
-
     private void gotoGallery() {
 
         Intent myIntent = new Intent(LaunchActivity.this, MainActivity.class);
         //myIntent.putExtra("key", value); //Optional parameters
         LaunchActivity.this.startActivity(myIntent);
+    }
+
+    private void getLabels(Bitmap bitmap, String uristring) {
+        FirebaseApp.initializeApp(this);
+        final JSONObject imgjsonobj = new JSONObject();
+        try {
+            imgjsonobj.put("uri",uristring);
+        } catch (JSONException e) {
+            //failed
+        }
+
+        Log.e("MYLIFESWORK","here");
+        FirebaseVisionCloudDetectorOptions options =
+                new FirebaseVisionCloudDetectorOptions.Builder()
+                        .setModelType(FirebaseVisionCloudDetectorOptions.LATEST_MODEL)
+                        .setMaxResults(15)
+                        .build();
+        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
+        FirebaseVisionCloudLabelDetector detector = FirebaseVision.getInstance()
+                .getVisionCloudLabelDetector(options);
+        Task<List<FirebaseVisionCloudLabel>> result =
+                detector.detectInImage(image)
+                        .addOnSuccessListener(
+                                new OnSuccessListener<List<FirebaseVisionCloudLabel>>() {
+                                    @Override
+                                    public void onSuccess(List<FirebaseVisionCloudLabel> labels) {
+                                        // Task completed successfully
+                                        JSONObject labeljsonobj = new JSONObject();
+                                        for (FirebaseVisionCloudLabel label: labels) {
+                                            String text = label.getLabel();
+                                            String entityid = label.getEntityId();
+                                            float confidence = label.getConfidence();
+                                            try{
+                                                labeljsonobj.put(label.getLabel(),confidence);
+                                            } catch (JSONException e) {
+                                                //failed
+                                            }
+                                            Log.e("MYLIFESWORK", text+entityid+confidence);
+                                        }
+                                        try {
+                                            imgjsonobj.put("labels", labeljsonobj);
+                                            imagesdata.add(imgjsonobj);
+                                            Log.e("okokok",imgjsonobj.toString());
+                                        } catch (JSONException e) {
+                                            //failed
+                                        }
+                                    }
+                                })
+                        .addOnFailureListener(
+                                new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        // Task failed with an exception
+                                        // ...
+                                    }
+                                });
+
     }
 
 }
