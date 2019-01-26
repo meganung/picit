@@ -1,6 +1,8 @@
 package com.example.android.sheinnovates;
 
+import android.content.ClipData;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.MediaStore;
@@ -12,11 +14,12 @@ import android.view.View;
 import android.widget.Button;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
 public class LaunchActivity extends AppCompatActivity {
-    private static final int REQUEST_CHOOSE_IMAGE = 1002;
+    private static final int PICK_IMAGE_MULTIPLE = 1001;
     private Uri imageUri;
     private static final String TAG = "LaunchActivity";
 
@@ -66,36 +69,63 @@ public class LaunchActivity extends AppCompatActivity {
     private void startChooseImageIntentForResult() {
         Intent intent = new Intent();
         intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         intent.setAction(Intent.ACTION_GET_CONTENT);
-        startActivityForResult(Intent.createChooser(intent, "Select Picture"), REQUEST_CHOOSE_IMAGE);
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_MULTIPLE);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_CHOOSE_IMAGE && resultCode == RESULT_OK) {
+        if (requestCode == PICK_IMAGE_MULTIPLE && resultCode == RESULT_OK) {
             // In this case, imageUri is returned by the chooser, save it
-            imageUri = data.getData();
-            mThumbUris.add(imageUri);
-            tryReloadAndDetectInImage();
-        }
-    }
-    // Gets the targeted width / height.
-    private Pair<Integer, Integer> getTargetedWidthHeight() {
-        return new Pair<>(480, 640);
-    }
-    private void tryReloadAndDetectInImage() {
-        try {
-            if (imageUri == null) {
-                return;
-            }
-            Bitmap imageBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-            Intent myIntent = new Intent(LaunchActivity.this, MainActivity.class);
-//                myIntent.putExtra("key", value); //Optional parameters
-            LaunchActivity.this.startActivity(myIntent);
+            String[] filePathColumn = {MediaStore.Images.Media.DATA};
+            List<String> imagesEncodedList = new ArrayList<String>();
+            if(data.getData()!=null) {
+                imageUri = data.getData();
+                // Get the cursor
+                Cursor cursor = getContentResolver().query(imageUri,
+                        filePathColumn, null, null, null);
+                // Move to first row
+                cursor.moveToFirst();
 
-        } catch (IOException e) {
-            Log.e(TAG, "Error retrieving saved image");
+                int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+                String imageEncoded = cursor.getString(columnIndex);
+                cursor.close();
+
+
+                mThumbUris.add(imageUri);
+                //tryReloadAndDetectInImage();
+            } else {
+                if (data.getClipData() != null) {
+                    ClipData mClipData = data.getClipData();
+                    for (int i = 0; i < mClipData.getItemCount(); i++) {
+
+                        ClipData.Item item = mClipData.getItemAt(i);
+                        Uri uri = item.getUri();
+                        mThumbUris.add(uri);
+                        // Get the cursor
+                        Cursor cursor = getContentResolver().query(uri, filePathColumn, null, null, null);
+                        // Move to first row
+                        cursor.moveToFirst();
+
+                        int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+                        String imageEncoded  = cursor.getString(columnIndex);
+                        imagesEncodedList.add(imageEncoded);
+                        cursor.close();
+                    }
+                    Log.v("LOG_TAG", "Selected Images" + mThumbUris.size());
+                }
+            }
+            gotoGallery();
         }
+    }
+
+
+    private void gotoGallery() {
+
+        Intent myIntent = new Intent(LaunchActivity.this, MainActivity.class);
+        //myIntent.putExtra("key", value); //Optional parameters
+        LaunchActivity.this.startActivity(myIntent);
     }
 
 }
