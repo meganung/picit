@@ -12,8 +12,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="400dp"
+        android:layout_marginTop="410dp"
+        android:background="@drawable/mybutton"
         android:text="DATABASE"
+        android:textColor="@color/white"
         tools:layout_editor_absoluteX="0dp"
         tools:layout_editor_absoluteY="0dp" />
 
@@ -22,8 +24,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="465dp"
-        android:text="UPLOAD" />
+        android:layout_marginTop="475dp"
+        android:background="@drawable/mybutton"
+        android:text="UPLOAD"
+        android:textColor="@color/white" />
 
     <ImageView
         android:id="@+id/imageView"
@@ -35,10 +39,10 @@
 
     <ImageView
         android:id="@+id/imageView2"
-        android:layout_width="200dp"
-        android:layout_height="221dp"
+        android:layout_width="252dp"
+        android:layout_height="273dp"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="65dp"
+        android:layout_marginTop="50dp"
         app:srcCompat="@drawable/textlogo" />
 
 </RelativeLayout>
