@@ -1,11 +1,13 @@
 package com.example.android.sheinnovates;
 
+import android.app.ProgressDialog;
 import android.content.ClipData;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -29,15 +31,26 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFace;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.microsoft.projectoxford.face.FaceServiceClient;
+import com.microsoft.projectoxford.face.FaceServiceRestClient;
+import com.microsoft.projectoxford.face.contract.Face;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 public class LaunchActivity extends AppCompatActivity {
@@ -161,13 +174,106 @@ public class LaunchActivity extends AppCompatActivity {
         LaunchActivity.this.startActivity(myIntent);
     }
 
-    private void processing(ImageData imageData){
+    private void processing(final ImageData imageData){
         FirebaseApp.initializeApp(this);
         try{
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageData.uri);
             FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
             getLabels(imageData,image);
             getFaceDetection(imageData,image);
+
+            // microsoft face api
+
+            final String apiEndpoint = "https://westcentralus.api.cognitive.microsoft.com/face/v1.0";
+            final String subscriptionKey = "800728d646444ac785808f3b7e47da09";
+
+            final FaceServiceClient faceServiceClient =
+                    new FaceServiceRestClient(apiEndpoint, subscriptionKey);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            ByteArrayInputStream inputStream = new ByteArrayInputStream((outputStream.toByteArray()));
+
+            AsyncTask<InputStream, String, Face[]> detectTask = new AsyncTask<InputStream, String, Face[]>() {
+                private ProgressDialog pd = new ProgressDialog(LaunchActivity.this);
+
+                @Override
+                protected Face[] doInBackground(InputStream... inputStreams) {
+
+                    publishProgress("Detecting...");
+                    FaceServiceClient.FaceAttributeType[] faceAttr = new FaceServiceClient.FaceAttributeType[]{
+                            FaceServiceClient.FaceAttributeType.HeadPose,
+                            FaceServiceClient.FaceAttributeType.Age,
+                            FaceServiceClient.FaceAttributeType.Gender,
+                            FaceServiceClient.FaceAttributeType.Smile,
+                            FaceServiceClient.FaceAttributeType.FacialHair
+                    };
+
+                    try {
+                        Face[] result = faceServiceClient.detect(inputStreams[0],
+                                true,
+                                false,
+                                faceAttr);
+
+                        if (result == null) {
+                            publishProgress("Detection Finished. Nothing Detected.");
+                            return null;
+                        }
+
+                        publishProgress(String.format("Detection Finished. %d face(s) detected",
+                                result.length));
+                        return result;
+                    } catch (Exception e) {
+                        publishProgress("Detection Failed");
+                        return null;
+                    }
+
+                }
+
+                @Override
+                protected void onPreExecute() {
+                    pd.show();
+                }
+
+                @Override
+                protected void onPostExecute(Face[] faces) {
+                    pd.dismiss();
+                    Gson gson =  new Gson();
+                    String data = gson.toJson(faces);
+                    if (data.length() > 2) {
+
+                        int gender_index = data.indexOf("gender");
+                        int gender_index_end = data.indexOf(",", gender_index);
+                        String gender_data = data.substring(gender_index + 9, gender_index_end - 1);
+                        imageData.setGender(gender_data);
+
+                        float gender_factor = (float) 0.0;
+                        if (gender_data == "female")
+                        {
+                            gender_factor = (float) 1.0;
+                        }
+
+                        int smile_index = data.indexOf("smile");
+                        int smile_index_end = data.indexOf(",", smile_index);
+                        float smile_data = Float.parseFloat(data.substring(smile_index + 7, smile_index_end - 1));
+
+                        float currentScore = imageData.score;
+                        float newScore = (float)(currentScore + (gender_factor + smile_data) / 1.0 * 2.0);
+
+                        imageData.score = newScore;
+                    }
+
+
+
+                }
+
+                @Override
+                protected void onProgressUpdate(String... values) {
+                    pd.setMessage(values[0]);
+                }
+            };
+
+            detectTask.execute(inputStream);
         } catch (IOException e) {
             Log.e(TAG, "Error getting bitmap image");
         }
@@ -257,7 +363,7 @@ public class LaunchActivity extends AppCompatActivity {
                                             qualityscore = 2*smileProb + eyeOpenProb;
                                         }
                                         Log.e("SCORE",Float.toString(qualityscore));
-                                        imageData.score = qualityscore;
+                                        imageData.score += qualityscore;
                                         sortImageData();
                                     }
                                 })

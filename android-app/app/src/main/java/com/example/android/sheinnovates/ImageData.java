@@ -10,12 +10,15 @@ public class ImageData {
     Float score;
     Float filteredscore;
     ArrayList<Label> labels;
+    String gender;
+
     public ImageData(Uri uri){
         this.uri = uri;
         this.processed = false;
         this.score = (float)0;
         this.filteredscore = (float)0;
         this.labels = new ArrayList<Label>();
+        this.gender = "";
     }
 
     public void addLabel(Label l){
@@ -37,6 +40,14 @@ public class ImageData {
         res = getLabelsText() + '\n';
         res = res + "Score: "+ score.toString();
         return res;
+    }
+
+    public void setGender(String info) {
+        gender = info;
+    }
+
+    public String getGender() {
+        return gender;
     }
 
 
