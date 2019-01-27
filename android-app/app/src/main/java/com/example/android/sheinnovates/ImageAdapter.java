@@ -19,7 +19,7 @@ public class ImageAdapter extends BaseAdapter {
     }
 
     public int getCount() {
-        return LaunchActivity.imagesdata.size();
+        return LaunchActivity.thedata.size();
     }
 
     public Object getItem(int position) {
@@ -43,11 +43,8 @@ public class ImageAdapter extends BaseAdapter {
             imageView = (ImageView) convertView;
         }
         Uri imguri = null;
-        try {
-            imguri = Uri.parse((LaunchActivity.imagesdata.get(position)).getString("uri"));
-        } catch(JSONException e) {
-            //failed
-        }
+
+        imguri = LaunchActivity.thedata.get(position).uri;
         if (imguri != null) {
             imageView.setImageURI(imguri);
         }

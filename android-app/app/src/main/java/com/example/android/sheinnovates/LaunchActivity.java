@@ -36,6 +36,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class LaunchActivity extends AppCompatActivity {
@@ -46,6 +48,8 @@ public class LaunchActivity extends AppCompatActivity {
     //main data
     public static ArrayList<JSONObject> imagesdata = new ArrayList<JSONObject>();
     public static JSONObject imagesjsonobj = new JSONObject();
+
+    public static ArrayList<ImageData> thedata = new ArrayList<ImageData>();
     // references to our images
     public static Integer[] mThumbIds = {
             R.drawable.test, R.drawable.test1,
@@ -117,21 +121,10 @@ public class LaunchActivity extends AppCompatActivity {
                 cursor.close();
 
                 mThumbUris.add(imageUri);
-                try{
-                    imagesjsonobj.put(imageUri.toString(), new JSONObject());
-                }catch (JSONException e){
-                    //failed
-                }
-                Log.e("MYLIFESWORK",imageUri.toString());
-                //get bitmap for processing
-                try{
-                    Bitmap imageBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-                    getLabels(imageBitmap, imageUri.toString());
-                    getFaceDetection(imageBitmap, imageUri.toString());
-                } catch (IOException e) {
-                    Log.e(TAG, "Error getting bitmap image");
-                }
-                //tryReloadAndDetectInImage();
+                ImageData theimage = new ImageData(imageUri);
+                thedata.add(theimage);
+                processing(theimage);
+
             } else {
                 if (data.getClipData() != null) {
                     ClipData mClipData = data.getClipData();
@@ -140,13 +133,10 @@ public class LaunchActivity extends AppCompatActivity {
                         ClipData.Item item = mClipData.getItemAt(i);
                         Uri uri = item.getUri();
                         mThumbUris.add(uri);
-                        try{
-                            Bitmap imageBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
-                            getLabels(imageBitmap,uri.toString());
-                            getFaceDetection(imageBitmap, uri.toString());
-                        } catch (IOException e) {
-                            Log.e(TAG, "Error getting bitmap image");
-                        }
+                        ImageData theimage = new ImageData(uri);
+                        thedata.add(theimage);
+                        processing(theimage);
+
                         // Get the cursor
                         Cursor cursor = getContentResolver().query(uri, filePathColumn, null, null, null);
                         // Move to first row
@@ -171,22 +161,27 @@ public class LaunchActivity extends AppCompatActivity {
         LaunchActivity.this.startActivity(myIntent);
     }
 
-    private void getLabels(Bitmap bitmap, final String uristring) {
+    private void processing(ImageData imageData){
         FirebaseApp.initializeApp(this);
-        final JSONObject imgjsonobj = new JSONObject();
-        try {
-            imgjsonobj.put("uri",uristring);
-        } catch (JSONException e) {
-            //failed
+        try{
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageData.uri);
+            FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
+            getLabels(imageData,image);
+            getFaceDetection(imageData,image);
+        } catch (IOException e) {
+            Log.e(TAG, "Error getting bitmap image");
         }
 
-        Log.e("MYLIFESWORK","here");
+        imageData.processed = true;
+        Log.e("thedata",thedata.toString());
+        Log.e("thedata-inside",thedata.get(0).labels.toString());
+    }
+    private void getLabels(final ImageData imageData, FirebaseVisionImage image) {
         FirebaseVisionCloudDetectorOptions options =
                 new FirebaseVisionCloudDetectorOptions.Builder()
                         .setModelType(FirebaseVisionCloudDetectorOptions.LATEST_MODEL)
                         .setMaxResults(15)
                         .build();
-        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
         FirebaseVisionCloudLabelDetector detector = FirebaseVision.getInstance()
                 .getVisionCloudLabelDetector(options);
         Task<List<FirebaseVisionCloudLabel>> result =
@@ -197,28 +192,22 @@ public class LaunchActivity extends AppCompatActivity {
                                     public void onSuccess(List<FirebaseVisionCloudLabel> labels) {
                                         // Task completed successfully
                                         JSONObject labeljsonobj = new JSONObject();
-                                        for (FirebaseVisionCloudLabel label: labels) {
+                                        for (FirebaseVisionCloudLabel label : labels) {
                                             String text = label.getLabel();
-                                            String entityid = label.getEntityId();
+                                            //String entityid = label.getEntityId();
                                             float confidence = label.getConfidence();
-                                            try{
-                                                labeljsonobj.put(label.getLabel(),confidence);
+                                            imageData.addLabel(new Label(text,confidence));
+                                            try {
+                                                labeljsonobj.put(label.getLabel(), confidence);
                                             } catch (JSONException e) {
                                                 //failed
                                             }
-                                            Log.e("MYLIFESWORK", text+entityid+confidence);
+                                            Log.e("labelprocessing", text + confidence);
                                         }
-                                        try {
-                                            (imagesjsonobj.getJSONObject(uristring)).put("labels",labeljsonobj);
-                                            Log.e("RIP",imagesjsonobj.toString());
-                                            imgjsonobj.put("labels", labeljsonobj);
-                                            imagesdata.add(imgjsonobj);
-                                            Log.e("okokok",imgjsonobj.toString());
-                                        } catch (JSONException e) {
-                                            //failed
-                                            Log.e("bigsad","rip me");
-                                        }
+
+
                                     }
+
                                 })
                         .addOnFailureListener(
                                 new OnFailureListener() {
@@ -226,13 +215,11 @@ public class LaunchActivity extends AppCompatActivity {
                                     public void onFailure(@NonNull Exception e) {
                                         // Task failed with an exception
                                         // ...
+
                                     }
                                 });
-
     }
-
-    private void getFaceDetection(Bitmap bitmap, final String uristring) {
-        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
+    private void getFaceDetection(final ImageData imageData, FirebaseVisionImage image) {
         FirebaseVisionFaceDetectorOptions options =
                 new FirebaseVisionFaceDetectorOptions.Builder()
                         .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
@@ -270,7 +257,8 @@ public class LaunchActivity extends AppCompatActivity {
                                             qualityscore = 2*smileProb + eyeOpenProb;
                                         }
                                         Log.e("SCORE",Float.toString(qualityscore));
-
+                                        imageData.score = qualityscore;
+                                        sortImageData();
                                     }
                                 })
                         .addOnFailureListener(
@@ -281,7 +269,14 @@ public class LaunchActivity extends AppCompatActivity {
                                         // ...
                                     }
                                 });
-
     }
 
+    public void sortImageData() {
+        Collections.sort(thedata, new Comparator<ImageData>(){
+            @Override
+            public int compare(ImageData id1, ImageData id2){
+                return id2.score.compareTo(id1.score);
+            }
+        });
+    }
 }
