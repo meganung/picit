@@ -45,11 +45,13 @@ public class LaunchActivity extends AppCompatActivity {
     private Uri imageUri;
     private static final String TAG = "LaunchActivity";
 
-    //main data
+    //fake data i used before but not really anymore i dont think
     public static ArrayList<JSONObject> imagesdata = new ArrayList<JSONObject>();
     public static JSONObject imagesjsonobj = new JSONObject();
 
+    //the real data
     public static ArrayList<ImageData> thedata = new ArrayList<ImageData>();
+    public static CheckLabels thelabels = new CheckLabels();
     // references to our images
     public static Integer[] mThumbIds = {
             R.drawable.test, R.drawable.test1,
@@ -257,8 +259,7 @@ public class LaunchActivity extends AppCompatActivity {
                                             qualityscore = 2*smileProb + eyeOpenProb;
                                         }
                                         Log.e("SCORE",Float.toString(qualityscore));
-                                        imageData.score = qualityscore;
-                                        sortImageData();
+                                        imageData.score = imageData.score + qualityscore;
                                     }
                                 })
                         .addOnFailureListener(
@@ -271,12 +272,5 @@ public class LaunchActivity extends AppCompatActivity {
                                 });
     }
 
-    public void sortImageData() {
-        Collections.sort(thedata, new Comparator<ImageData>(){
-            @Override
-            public int compare(ImageData id1, ImageData id2){
-                return id2.score.compareTo(id1.score);
-            }
-        });
-    }
 }
+
