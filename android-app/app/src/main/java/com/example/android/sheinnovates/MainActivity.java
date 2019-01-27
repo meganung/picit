@@ -2,10 +2,13 @@ package com.example.android.sheinnovates;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Handler;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -13,20 +16,29 @@ import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private Toolbar mTopToolbar;
+    SwipeRefreshLayout swipeRefreshLayout;
+    GridView gridview;
+    ImageAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        GridView gridview = (GridView) findViewById(R.id.gridview);
-        gridview.setAdapter(new ImageAdapter(this));
+        swipeRefreshLayout = (SwipeRefreshLayout)findViewById(R.id.swipe_refresh_layout);
+
+        gridview = (GridView) findViewById(R.id.gridview);
+        adapter= new ImageAdapter(this);
+        gridview.setAdapter(adapter);
 
         gridview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v,
@@ -43,7 +55,43 @@ public class MainActivity extends AppCompatActivity {
         mTopToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(mTopToolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+            //handling swipe refresh
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        swipeRefreshLayout.setRefreshing(false);
+                        sortImageData();
+                        gridview.setAdapter(adapter);
+                        adapter.notifyDataSetChanged();
+                        gridview.smoothScrollToPosition(0);
+                    }
+                }, 2000);
+            }
+        });
+
+        swipeRefreshLayout.post(new Runnable() {
+            @Override
+            public void run() {
+                swipeRefreshLayout.setRefreshing(false);
+                Log.e("hereee","okok1");
+                calcFilterScore();
+                sortImageData();
+                Log.e("hereee","okok");
+                gridview.setAdapter(adapter);
+                adapter.notifyDataSetChanged();
+                gridview.smoothScrollToPosition(0);
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        });
+
+
     }
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -100,16 +148,13 @@ public class MainActivity extends AppCompatActivity {
                         which The position of the item in the list that was clicked.
                         isChecked True if the click checked the item, else false.
                  */
-            builder.setMultiChoiceItems(options, checkedOptions, new DialogInterface.OnMultiChoiceClickListener() {
+            builder.setMultiChoiceItems(LaunchActivity.thelabels.getLabelArray(), LaunchActivity.thelabels.getCheckedArray(), new DialogInterface.OnMultiChoiceClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which, boolean isChecked) {
 
-                    checkedOptions[which] = isChecked;
+                    LaunchActivity.thelabels.checkindex(which);
+                            //[which] = isChecked;
 
-                    String currentItem = optionsList.get(which);
-
-                    Toast.makeText(getApplicationContext(),
-                            currentItem + " " + isChecked, Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -123,6 +168,16 @@ public class MainActivity extends AppCompatActivity {
                     // Notify the current action
                     Toast.makeText(getApplicationContext(),
                             "Okay!", Toast.LENGTH_SHORT).show();
+                    swipeRefreshLayout.setRefreshing(true);
+                    Log.e("hereee","okok2");
+                    calcFilterScore();
+                    sortImageData();
+                    Log.e("hereee","okok");
+                    gridview.setAdapter(adapter);
+                    adapter.notifyDataSetChanged();
+                    gridview.smoothScrollToPosition(0);
+                    swipeRefreshLayout.setRefreshing(false);
+                    //if (!swipeRefreshLayout.isRefreshing()) swipeRefreshLayout.setRefreshing(true);
                 }
             });
 
@@ -142,4 +197,41 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+    public void sortImageData() {
+        Collections.sort(LaunchActivity.thedata, new Comparator<ImageData>(){
+            @Override
+            public int compare(ImageData id1, ImageData id2){
+                return id2.score.compareTo(id1.score);
+            }
+        });
+        Log.e("donehere","done");
+        swipeRefreshLayout.setRefreshing(false);
+    }
+
+    public void calcFilterScore(){
+        Log.e("calcfilterscore","here");
+        ArrayList<String> checkeditems = LaunchActivity.thelabels.getCheckedLabels();
+        Log.e("checkedItems", checkeditems.toString());
+        for (int i = 0; i < LaunchActivity.thedata.size(); i++){
+            float fscore = 0;
+            for (Label l : LaunchActivity.thedata.get(i).labels){
+                if (checkeditems.contains(l.name)){
+                    Log.e("lscore",Float.toString(l.score));
+                    fscore = fscore + l.score;
+                }
+            }
+            Log.e("newscore",Float.toString(fscore));
+            LaunchActivity.thedata.get(i).score = LaunchActivity.thedata.get(i).score + fscore;
+        }/*
+        for (ImageData imgdata : LaunchActivity.thedata) {
+            float fscore = 0;
+            for (Label l : imgdata.labels){
+                if (checkeditems.contains(l)){
+                    fscore = fscore + l.score;
+                }
+            }
+            imgdata.score = imgdata.score + fscore;
+        }*/
+    }
+
 }

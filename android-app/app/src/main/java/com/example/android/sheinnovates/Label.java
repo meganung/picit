@@ -6,6 +6,7 @@ public class Label {
     public Label(String n, Float s){
         this.name = n;
         this.score = s;
+        LaunchActivity.thelabels.addLabel(n);
     }
 
     public String getName() {
