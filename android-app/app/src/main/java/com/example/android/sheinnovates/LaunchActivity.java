@@ -313,13 +313,15 @@ public class LaunchActivity extends AppCompatActivity {
                                             String text = label.getLabel();
                                             //String entityid = label.getEntityId();
                                             float confidence = label.getConfidence();
-                                            imageData.addLabel(new Label(text,confidence));
-                                            try {
-                                                labeljsonobj.put(label.getLabel(), confidence);
-                                            } catch (JSONException e) {
-                                                //failed
+                                            if (confidence > 0.7) {
+                                                imageData.addLabel(new Label(text, confidence));
+                                                try {
+                                                    labeljsonobj.put(label.getLabel(), confidence);
+                                                } catch (JSONException e) {
+                                                    //failed
+                                                }
+                                                Log.e("labelprocessing", text + confidence);
                                             }
-                                            Log.e("labelprocessing", text + confidence);
                                         }
 
 
