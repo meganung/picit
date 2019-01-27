@@ -246,7 +246,11 @@ public class LaunchActivity extends AppCompatActivity {
 
                         int gender_index = data.indexOf("gender");
                         int gender_index_end = data.indexOf(",", gender_index);
-                        String gender_data = data.substring(gender_index + 9, gender_index_end - 1);
+
+                        String gender_data = "";
+                        if ((gender_index + 9 < data.length()) && (gender_index_end - 1 < data.length())){
+                            gender_data = data.substring(gender_index + 9, gender_index_end - 1);
+                        }
                         imageData.setGender(gender_data);
 
                         float gender_factor = (float) 0.0;
@@ -257,7 +261,12 @@ public class LaunchActivity extends AppCompatActivity {
 
                         int smile_index = data.indexOf("smile");
                         int smile_index_end = data.indexOf(",", smile_index);
-                        float smile_data = Float.parseFloat(data.substring(smile_index + 7, smile_index_end - 1));
+
+                        float smile_data = (float) 0;
+                        if ((smile_index + 7 < data.length()) && (smile_index_end - 1 < data.length()))
+                        {
+                            smile_data = Float.parseFloat(data.substring(smile_index + 7, smile_index_end - 1));
+                        }
 
                         float currentScore = imageData.score;
                         float newScore = (float)(currentScore + (gender_factor + smile_data) / 1.0 * 2.0);

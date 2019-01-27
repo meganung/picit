@@ -27,14 +27,14 @@
         android:id="@+id/gridview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:columnWidth="90dp"
-        android:numColumns="3"
-        android:verticalSpacing="10dp"
-        android:horizontalSpacing="10dp"
-        android:stretchMode="columnWidth"
+        android:columnWidth="100dp"
         android:gravity="center"
+        android:horizontalSpacing="2dp"
+        android:numColumns="2"
+        android:paddingTop="5dp"
+        android:stretchMode="columnWidth"
 
-        > </GridView>
+        android:verticalSpacing="5dp"></GridView>
 </android.support.v4.widget.SwipeRefreshLayout>
 
 </LinearLayout>
