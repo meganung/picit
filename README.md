@@ -2,7 +2,7 @@
 
 Smart Event Photo Picker
 
-SheInnovates Hackathon 2019 - devpost: https://devpost.com/software/pickit-ave0u8
+SheInnovates Hackathon 2019 - [devpost](https://devpost.com/software/pickit-ave0u8)
 
 Some 200-300 event photos could be generated for a typical university event. Out of all of the photos, there are fuzzy ones, underexposed ones and the ones where everybody seems unhappy for some reason - it takes a huge amount of time and efforts to handpick the useable photos from the pool for social media use.
 
