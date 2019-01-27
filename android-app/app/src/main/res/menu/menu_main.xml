@@ -2,20 +2,23 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto"
       xmlns:tools="http://schemas.android.com/tools"
+      android:layoutDirection="rtl"
       tools:context=".MainActivity">
+    <item
+        android:id="@+id/action_back"
+        android:background="#ffffff"
+        android:icon="@drawable/baseline_keyboard_arrow_left_black_18dp"
+        android:orderInCategory="1"
+        android:title="User"
+        app:showAsAction="ifRoom"></item>
 
     <item
         android:id="@+id/action_filter"
-        android:orderInCategory="300"
-        android:title="User"
         android:icon="@drawable/round_filter_list_black_18dp"
-        app:showAsAction="ifRoom"></item>
-
-    <item
-        android:id="@+id/action_back"
         android:orderInCategory="0"
         android:title="User"
-        android:icon="@drawable/baseline_keyboard_arrow_left_black_18dp"
         app:showAsAction="ifRoom"></item>
+
+
 
 </menu>

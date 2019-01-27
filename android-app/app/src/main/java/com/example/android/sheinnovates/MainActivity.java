@@ -107,8 +107,6 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_filter) {
-            Toast.makeText(MainActivity.this, "Action clicked", Toast.LENGTH_LONG).show();
-
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 
             String[] options = new String[]{
@@ -206,7 +204,9 @@ public class MainActivity extends AppCompatActivity {
         Collections.sort(LaunchActivity.thedata, new Comparator<ImageData>(){
             @Override
             public int compare(ImageData id1, ImageData id2){
-                return id2.score.compareTo(id1.score);
+                Float id1score = id1.score + id1.filteredscore;
+                Float id2score = id2.score + id2.filteredscore;
+                return id2score.compareTo(id1score);
             }
         });
         Log.e("donehere","done");
@@ -226,8 +226,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             Log.e("newscore",Float.toString(fscore));
-            LaunchActivity.thedata.get(i).score = LaunchActivity.thedata.get(i).score + fscore;
-        }/*
+            LaunchActivity.thedata.get(i).filteredscore = fscore;
+        }
+/*
         for (ImageData imgdata : LaunchActivity.thedata) {
             float fscore = 0;
             for (Label l : imgdata.labels){
