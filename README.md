@@ -8,15 +8,19 @@ Some 200-300 event photos could be generated for a typical university event. Out
 
 Pic It! is an Android app that helps event organizers efficiently filter and rank the best, most relevant photos from all photos.
 
-Pic It! Ranks photos using our algorithm that takes into account: (1) the quality of the photo; (2) the average positive emotions on every detectable face in the frame that was analyzed using machine learning tools.
+Pic It! Ranks photos using our algorithm that takes into account: 
+* the quality of the photo;
+* the average positive emotions on every detectable face in the frame that was analyzed using machine learning tools;
+* if people have their eyes open in the picture
+* (for this hackathon) gender recognition
 
-Pic It! Filter photos by how relevant a tag/theme is to the photo.
+Photos can also be filtered and re-ranked by the algorithm by selecting and placing preference to relevant tags/themes.
 
 ## Built With
 
 * [Android Studio](https://developer.android.com/studio/) - Mobile App
 * [Google Vision API (ML Kit)](https://cloud.google.com/vision/) - Image Labeling, Face Detection and Analysis
-* [Microsoft Face API ](https://azure.microsoft.com/en-us/services/cognitive-services/face/)) - Face Detection and gender analysis
+* [Microsoft Face API](https://azure.microsoft.com/en-us/services/cognitive-services/face/) - Face Detection and gender analysis
 
 ## Authors
 
