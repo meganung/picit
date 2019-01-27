@@ -5,10 +5,17 @@
       tools:context=".MainActivity">
 
     <item
-        android:id="@+id/action_favorite"
+        android:id="@+id/action_filter"
         android:orderInCategory="300"
         android:title="User"
         android:icon="@drawable/round_filter_list_black_18dp"
+        app:showAsAction="ifRoom"></item>
+
+    <item
+        android:id="@+id/action_back"
+        android:orderInCategory="0"
+        android:title="User"
+        android:icon="@drawable/baseline_keyboard_arrow_left_black_18dp"
         app:showAsAction="ifRoom"></item>
 
 </menu>

@@ -106,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        if (id == R.id.action_favorite) {
+        if (id == R.id.action_filter) {
             Toast.makeText(MainActivity.this, "Action clicked", Toast.LENGTH_LONG).show();
 
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
@@ -193,6 +193,11 @@ public class MainActivity extends AppCompatActivity {
             dialog.show();
 
             return true;
+        }
+
+        if (id == R.id.action_back) {
+            Intent intent = new Intent(MainActivity.this, LaunchActivity.class);
+            startActivity(intent);
         }
 
         return super.onOptionsItemSelected(item);
